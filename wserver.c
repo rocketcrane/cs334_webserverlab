@@ -14,7 +14,6 @@ int main(int argc, char *argv[]) {
     char *root_dir = default_root;
     int port = 10000;
 	int threads = 1;
-	int buffers = 1;
 	char *schedalg = "FIFO";
     
     while ((c = getopt(argc, argv, "d:p:t:b:s:")) != -1)
@@ -49,7 +48,7 @@ int main(int argc, char *argv[]) {
     // now, get to work (listen for port)
     int listen_fd = open_listen_fd_or_die(port);
 
-	struct request request_buffer[buffers]; //create circular buffer of request objects to store conn_fd (FIFO only)
+	buffer = (struct request*)malloc(sizeof(struct request) * buffers);
 	
 	//master thread loop
 	//only FIFO (currently)
@@ -65,8 +64,8 @@ int main(int argc, char *argv[]) {
 		struct sockaddr_in client_addr;
 		int client_len = sizeof(client_addr);
 		int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
-		
-		put(conn_fd, request_buffer, buffers); //put file descriptor in buffer		
+		printf("original fd: %d\n", conn_fd);
+		put(conn_fd); //put file descriptor in buffer		
 		pthread_cond_signal(&full); //signal a worker thread
 		pthread_mutex_unlock(&mutex); //unlock section
 

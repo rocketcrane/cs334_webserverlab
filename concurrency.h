@@ -1,6 +1,7 @@
 int fill = 0;
 int use = 0;
 int count = 0;
+int buffers;
 
 //create lock and condition variables
 pthread_cond_t empty, full;
@@ -11,34 +12,35 @@ struct request {
     int file_size;
 };
 
-void put(int value, struct request buffer[], int buffers) {
+struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
+
+void put(int value) {
     buffer[fill].conn_fd = value;
     //buffer[fill].file_size = size of file
     fill = (fill + 1) % buffers;
     count++;
 }
 
-int get(struct request buffer[], int buffers) {
+int get() {
     int val = buffer[use].conn_fd;
     use = (use + 1) % buffers;
     count--;
+    printf("new fd: %d\n", val);
     return val;
 }
 
 //worker thread function
-void worker(struct request buffer[], int buffers) {
+void* worker(void *arg) {
     while(1) {
         pthread_mutex_lock(&mutex); //lock section
 
         while (count == 0) {
             pthread_cond_wait(&full, &mutex);
         }
-
-        int conn_fd = get(buffer, buffers);
         pthread_mutex_unlock(&mutex); //unlock section
         pthread_cond_signal(&empty); //signal producer (master) thread
 
-        request_handle(conn_fd);
+        request_handle(get());
     }
 }
 
