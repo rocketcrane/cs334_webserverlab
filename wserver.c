@@ -42,16 +42,12 @@ int main(int argc, char *argv[]) {
     // run out of this directory
     chdir_or_die(root_dir);
 
-	//create_threads(threads);
+	create_threads(threads);
 	
     // now, get to work (listen for port)
     int listen_fd = open_listen_fd_or_die(port);
-	
-	//create lock and condition variables
-	pthread_cond_t empty, fill;
-	pthread_mutex_t mutex;
 
-	int fd_buffer[buffers]; //create circular buffer to store conn_fd (FIFO only)
+	struct request request_buffer[buffers]; //create circular buffer of request objects to store conn_fd (FIFO only)
 	
 	//master thread loop
 	//only FIFO (currently)
@@ -68,11 +64,9 @@ int main(int argc, char *argv[]) {
 		int client_len = sizeof(client_addr);
 		int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
 		
-		put(conn_fd, fd_buffer, buffers); //put file descriptor in buffer		
+		put(conn_fd, request_buffer, buffers); //put file descriptor in buffer		
 		pthread_cond_signal(&fill); //signal a worker thread
 		pthread_mutex_unlock(&mutex); //unlock section
-
-		//request_handle(conn_fd);
 
 		close_or_die(conn_fd);
     }
