@@ -46,7 +46,7 @@ void worker(struct request buffer[], int buffers) {
 void create_threads(int threads) {
     pthread_t id[threads]; //create pthread handles
 
-    for (int i; i = 0; i < threads) {
+    for (int i = 0; i < threads; i++) {
         pthread_create(&id[i], NULL, worker, NULL);
     }
 }

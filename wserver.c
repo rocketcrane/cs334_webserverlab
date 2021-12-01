@@ -43,6 +43,8 @@ int main(int argc, char *argv[]) {
     chdir_or_die(root_dir);
 
 	create_threads(threads);
+
+	char* scheduler = schedalg; //choose scheduler (not used)
 	
     // now, get to work (listen for port)
     int listen_fd = open_listen_fd_or_die(port);
@@ -58,7 +60,7 @@ int main(int argc, char *argv[]) {
 		while (count == buffers) {
 			pthread_cond_wait(&empty, &mutex);
 		}
-		
+
 		//(original) code to get connection file descriptor
 		struct sockaddr_in client_addr;
 		int client_len = sizeof(client_addr);
