@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 		int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
 		
 		put(conn_fd, request_buffer, buffers); //put file descriptor in buffer		
-		pthread_cond_signal(&fill); //signal a worker thread
+		pthread_cond_signal(&full); //signal a worker thread
 		pthread_mutex_unlock(&mutex); //unlock section
 
 		close_or_die(conn_fd);

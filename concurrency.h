@@ -3,7 +3,7 @@ int use = 0;
 int count = 0;
 
 //create lock and condition variables
-pthread_cond_t empty, fill;
+pthread_cond_t empty, full;
 pthread_mutex_t mutex;
 
 struct request {
@@ -40,7 +40,7 @@ void worker(struct request buffer[], int buffers) {
         pthread_mutex_lock(&mutex); //lock section
 
         while (count == 0) {
-            pthread_cond_wait(&fill, &mutex);
+            pthread_cond_wait(&full, &mutex);
         }
 
         int conn_fd = get(buffer, buffers);
