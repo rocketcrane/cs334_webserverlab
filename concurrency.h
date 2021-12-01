@@ -25,15 +25,6 @@ int get(struct request buffer[], int buffers) {
     return val;
 }
 
-//create consumer (worker) threads
-void create_threads(int threads) {
-    pthread_t id[threads]; //create pthread handles
-
-    for (int i; i = 0; i < threads) {
-        pthread_create(&id[i], NULL, worker, NULL);
-    }
-}
-
 //worker thread function
 void worker(struct request buffer[], int buffers) {
     while(1) {
@@ -48,5 +39,14 @@ void worker(struct request buffer[], int buffers) {
         pthread_cond_signal(&empty); //signal producer (master) thread
 
         request_handle(conn_fd);
+    }
+}
+
+//create consumer (worker) threads
+void create_threads(int threads) {
+    pthread_t id[threads]; //create pthread handles
+
+    for (int i; i = 0; i < threads) {
+        pthread_create(&id[i], NULL, worker, NULL);
     }
 }
