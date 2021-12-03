@@ -8,6 +8,8 @@ int use = 0;
 int count = 0;
 int buffers;
 
+int scheduler = 0; //scheduler chosen: FIFO = 0, SFF = 1;
+
 //create lock and condition variables
 pthread_cond_t empty, full;
 pthread_mutex_t mutex;
@@ -59,7 +61,32 @@ void put(int value) {
 }
 
 struct request get() {
+    //FIFO
     struct request local_request = buffer[use];
+    //SFF
+    if(scheduler == 1) {
+        //walk through array to see which file size is smallest but non zero and save that request to local_request
+        //then zero that item's file size to prevent it from being used by another thread
+        int index = -1; //initialize index to -1 (no non-zero size files)
+        for (int i = 0; i < buffers; i++) {
+            
+            //if this item is empty don't bother
+            if(buffer[i].file_size == 0) {
+                break;
+            }
+            //else if index is still -1 then save the first file
+            else if(index == -1) {
+                index = i;
+            }
+            //else if the file size is smaller than the previous one, use this one instead
+            else if(buffer[i].file_size < buffer[index].file_size) {
+                index = i;
+            }
+        }
+        local_request = buffer[index]; //save smallest file request to local_request
+        buffer[index].file_size = 0; //zero out the file size of that request
+    }
+
     use = (use + 1) % buffers;
     count--;
     //printf("new fd: %d\n", local_request.conn_fd);

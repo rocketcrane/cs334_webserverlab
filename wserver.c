@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h> //for scheduler string comparison
 #include <pthread.h> //pthreads for concurrency
 #include "request.h"
 #include "io_helper.h"
@@ -38,12 +39,26 @@ int main(int argc, char *argv[]) {
 	    exit(1);
 	}
 
+	//update scheduler boolean for worker threads
+	//FIFO
+	if (!strcmp(schedalg, "FIFO")) { //strcmp returns 0 if two strings are equal
+		scheduler = 0;
+	}
+	//SFF 
+	else if (!strcmp(schedalg, "SFF")) {
+		scheduler = 1;
+	}
+	//otherwise error out 
+	else {
+		printf("requested %s scheduler not implemented\n", schedalg);
+		exit(1);
+	}
+	printf("scheduler is %s\n", schedalg);
+
     // run out of this directory
     chdir_or_die(root_dir);
 
 	create_threads(threads);
-
-	char* scheduler = schedalg; //choose scheduler (not used)
 	
     // now, get to work (listen for port)
     int listen_fd = open_listen_fd_or_die(port);
