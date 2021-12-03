@@ -1,3 +1,6 @@
+#include <sys/stat.h>
+#include "request.h"
+
 int fill = 0;
 int use = 0;
 int count = 0;
@@ -15,10 +18,14 @@ struct request {
 struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
 
 void put(int value) {
+    char* fn[8192];//change to maxbuf?
     buffer[fill].conn_fd = value;
-    //buffer[fill].file_size = size of file
+    get_file_name(value, fn);
+    buffer[fill].file_size = get_file_size(fn);
+    printf("file size: %d", buffer[fill].file_size);
     fill = (fill + 1) % buffers;
     count++;
+    printf("did put, count: %d\n", count);
 }
 
 int get() {
@@ -29,19 +36,30 @@ int get() {
     return val;
 }
 
+size_t get_file_size(const char* file_name) {
+    struct stat file_stats;
+    if(stat(file_name, &file_stats) != 0) {
+        return 0;
+    }
+    return file_stats.file_size;
+}
+
 //worker thread function
 void* worker(void *arg) {
+    pthread_mutex_lock(&mutex); //lock section
     while(1) {
-        pthread_mutex_lock(&mutex); //lock section
-
         while (count == 0) {
+            printf ("before wait worker, count: %d\n", count);
             pthread_cond_wait(&full, &mutex);
         }
-        pthread_mutex_unlock(&mutex); //unlock section
+        printf("after wait\n");
+        int fd = get();
+        printf("FINAL FD: %d\n", fd);
+        request_handle(fd);
+        close_or_die(fd);
         pthread_cond_signal(&empty); //signal producer (master) thread
-
-        request_handle(get());
     }
+    pthread_mutex_unlock(&mutex); //unlock section
 }
 
 //create consumer (worker) threads
@@ -50,5 +68,6 @@ void create_threads(int threads) {
 
     for (int i = 0; i < threads; i++) {
         pthread_create(&id[i], NULL, worker, NULL);
+        printf("created thread %d\n", i);
     }
 }
