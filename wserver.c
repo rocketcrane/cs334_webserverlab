@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 		printf("original fd: %d\n", conn_fd);
 		put(conn_fd); //put file descriptor in buffer		
 		pthread_cond_signal(&full); //signal a worker thread
-		printf("post sig\n");
+		//printf("post sig\n");
 		pthread_mutex_unlock(&mutex); //unlock section
 
     }

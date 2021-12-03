@@ -1,6 +1,8 @@
 #include <sys/stat.h>
 #include "request.h"
 
+#define MAXBUF (8192) //same as request.c
+
 int fill = 0;
 int use = 0;
 int count = 0;
@@ -13,10 +15,27 @@ pthread_mutex_t mutex;
 struct request {
     int conn_fd;
     int file_size;
+
+    //for request handling
+    char buf[MAXBUF];
+    char method[MAXBUF];
+    char uri[MAXBUF];
+    char version[MAXBUF];
+    char filename[MAXBUF];
 };
 
 struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
 
+//get filename
+int get_file_name(int fd) { //add catch for if fail return 0
+    //use FILL because this is called from PUT, before FILL is updated
+    readline_or_die(fd, buffer[fill].buf, MAXBUF);
+    sscanf(buffer[fill].buf, "%s %s %s", buffer[fill].method, buffer[fill].uri, buffer[fill].version);
+    sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
+    return 1;
+}
+
+//get file size from filename
 size_t get_file_size(const char* file_name) {
     struct stat file_stats;
     if(stat(file_name, &file_stats) != 0) {
@@ -26,22 +45,25 @@ size_t get_file_size(const char* file_name) {
 }
 
 void put(int value) {
-    char* fn[8192];//change to maxbuf?
     buffer[fill].conn_fd = value;
-    //get_file_name(value, fn);
-    //buffer[fill].file_size = get_file_size(fn);
-    //printf("file size: %d\n", buffer[fill].file_size);
+
+    //code to get file size
+    get_file_name(value);
+    buffer[fill].file_size = get_file_size(buffer[fill].filename);
+    printf("file size: %d\n", buffer[fill].file_size);
+    
+    //update fill and count
     fill = (fill + 1) % buffers;
     count++;
-    printf("did put, count: %d\n", count);
+    //printf("did put, count: %d\n", count);
 }
 
-int get() {
-    int val = buffer[use].conn_fd;
+struct request get() {
+    struct request local_request = buffer[use];
     use = (use + 1) % buffers;
     count--;
-    printf("new fd: %d\n", val);
-    return val;
+    //printf("new fd: %d\n", local_request.conn_fd);
+    return local_request;
 }
 
 //worker thread function
@@ -49,14 +71,14 @@ void* worker(void *arg) {
     pthread_mutex_lock(&mutex); //lock section
     while(1) {
         while (count == 0) {
-            printf ("before wait worker, count: %d\n", count);
+            //printf ("before wait worker, count: %d\n", count);
             pthread_cond_wait(&full, &mutex);
         }
-        printf("after wait\n");
-        int fd = get();
-        printf("FINAL FD: %d\n", fd);
-        request_handle(fd);
-        close_or_die(fd);
+        //printf("after wait\n");
+        struct request local_request = get();
+        printf("FINAL FD: %d\n", local_request.conn_fd);
+        request_handle(local_request.conn_fd, local_request.buf, local_request.method, local_request.uri, local_request.version, local_request.filename); //actually handles the request
+        close_or_die(local_request.conn_fd);
         pthread_cond_signal(&empty); //signal producer (master) thread
     }
     pthread_mutex_unlock(&mutex); //unlock section

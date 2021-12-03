@@ -141,15 +141,16 @@ void request_serve_static(int fd, char *filename, int filesize) {
     munmap_or_die(srcp, filesize);
 }
 
-// handle a request
-void request_handle(int fd) {
+// handle a request (NOW TAKES IN ALL THE VARIABLES! SO GREAT)
+void request_handle(int fd, char* buf, char* method, char* uri, char* version, char* filename) {
     int is_static;
     struct stat sbuf;
-    char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
-    char filename[MAXBUF], cgiargs[MAXBUF];
+    //char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
+    char /*filename[MAXBUF], */cgiargs[MAXBUF];
     
-    readline_or_die(fd, buf, MAXBUF);
-    sscanf(buf, "%s %s %s", method, uri, version);
+    //original code: all reading code is one-way only (you can only read once from a socket) so this is commented out
+    //readline_or_die(fd, buf, MAXBUF);
+    //sscanf(buf, "%s %s %s", method, uri, version);
     printf("method:%s uri:%s version:%s\n", method, uri, version);
     
     if (strcasecmp(method, "GET")) {
@@ -177,13 +178,4 @@ void request_handle(int fd) {
 	}
 	request_serve_dynamic(fd, filename, cgiargs);
     }
-}
-
-//get filename
-int get_file_name(int fd, char* file_name) { //add catch for if fail return 0
-    char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
-    readline_or_die(fd, buf, MAXBUF);
-    sscanf(buf, "%s %s %s", method, uri, version);
-    sprintf(file_name, ".%s", uri);
-    return 1;
 }
