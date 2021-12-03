@@ -178,3 +178,12 @@ void request_handle(int fd) {
 	request_serve_dynamic(fd, filename, cgiargs);
     }
 }
+
+//get filename
+int get_file_name(int fd, char* file_name) { //add catch for if fail return 0
+    char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
+    readline_or_die(fd, buf, MAXBUF);
+    sscanf(buf, "%s %s %s", method, uri, version);
+    sprintf(file_name, ".%s", uri);
+    return 1;
+}

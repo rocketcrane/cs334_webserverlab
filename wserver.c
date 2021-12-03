@@ -52,9 +52,8 @@ int main(int argc, char *argv[]) {
 	
 	//master thread loop
 	//only FIFO (currently)
+	pthread_mutex_lock(&mutex); //lock section
     while (1) {
-		pthread_mutex_lock(&mutex); //lock section
-
 		//if buffer is full then wait for empty signal
 		while (count == buffers) {
 			pthread_cond_wait(&empty, &mutex);
@@ -67,9 +66,9 @@ int main(int argc, char *argv[]) {
 		printf("original fd: %d\n", conn_fd);
 		put(conn_fd); //put file descriptor in buffer		
 		pthread_cond_signal(&full); //signal a worker thread
+		printf("post sig\n");
 		pthread_mutex_unlock(&mutex); //unlock section
 
-		close_or_die(conn_fd);
     }
     return 0;
 }
