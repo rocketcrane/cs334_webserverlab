@@ -17,12 +17,20 @@ struct request {
 
 struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
 
+size_t get_file_size(const char* file_name) {
+    struct stat file_stats;
+    if(stat(file_name, &file_stats) != 0) {
+        return 0;
+    }
+    return file_stats.st_size;
+}
+
 void put(int value) {
     char* fn[8192];//change to maxbuf?
     buffer[fill].conn_fd = value;
-    get_file_name(value, fn);
-    buffer[fill].file_size = get_file_size(fn);
-    printf("file size: %d", buffer[fill].file_size);
+    //get_file_name(value, fn);
+    //buffer[fill].file_size = get_file_size(fn);
+    //printf("file size: %d\n", buffer[fill].file_size);
     fill = (fill + 1) % buffers;
     count++;
     printf("did put, count: %d\n", count);
@@ -34,14 +42,6 @@ int get() {
     count--;
     printf("new fd: %d\n", val);
     return val;
-}
-
-size_t get_file_size(const char* file_name) {
-    struct stat file_stats;
-    if(stat(file_name, &file_stats) != 0) {
-        return 0;
-    }
-    return file_stats.file_size;
 }
 
 //worker thread function
