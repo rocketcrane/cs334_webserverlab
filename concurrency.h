@@ -72,7 +72,7 @@ struct request get() {
             
             //if this item is empty don't bother
             if(buffer[i].file_size == 0) {
-                break;
+                continue;
             }
             //else if index is still -1 then save the first file
             else if(index == -1) {
@@ -83,6 +83,7 @@ struct request get() {
                 index = i;
             }
         }
+        printf("SFF index is %d\n", index);
         local_request = buffer[index]; //save smallest file request to local_request
         buffer[index].file_size = 0; //zero out the file size of that request
     }
