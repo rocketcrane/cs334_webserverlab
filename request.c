@@ -142,11 +142,11 @@ void request_serve_static(int fd, char *filename, int filesize) {
 }
 
 // handle a request (NOW TAKES IN ALL THE VARIABLES! SO GREAT)
-void request_handle(int fd, char* buf, char* method, char* uri, char* version, char* filename) {
-    int is_static;
+void request_handle(int fd, char* buf, char* method, char* uri, char* version, char* filename, char* cgiargs, int is_static) {
+    //int is_static;
     struct stat sbuf;
     //char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
-    char /*filename[MAXBUF], */cgiargs[MAXBUF];
+    //char cgiargs[MAXBUF];
     
     //original code: all reading code is one-way only (you can only read once from a socket) so this is commented out
     //readline_or_die(fd, buf, MAXBUF);
@@ -159,7 +159,7 @@ void request_handle(int fd, char* buf, char* method, char* uri, char* version, c
     }
     request_read_headers(fd);
     
-    is_static = request_parse_uri(uri, filename, cgiargs);
+    printf("cgiargs: %s\n", cgiargs);
     if (stat(filename, &sbuf) < 0) {
 	request_error(fd, filename, "404", "Not found", "server could not find this file");
 	return;

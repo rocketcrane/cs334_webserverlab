@@ -17,6 +17,7 @@ pthread_mutex_t mutex;
 struct request {
     int conn_fd;
     int file_size;
+    int is_static;
 
     //for request handling
     char buf[MAXBUF];
@@ -24,6 +25,7 @@ struct request {
     char uri[MAXBUF];
     char version[MAXBUF];
     char filename[MAXBUF];
+    char cgiargs[MAXBUF];
 };
 
 struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
@@ -33,7 +35,8 @@ int get_file_name(int fd) { //add catch for if fail return 0
     //use FILL because this is called from PUT, before FILL is updated
     readline_or_die(fd, buffer[fill].buf, MAXBUF);
     sscanf(buffer[fill].buf, "%s %s %s", buffer[fill].method, buffer[fill].uri, buffer[fill].version);
-    sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
+    buffer[fill].is_static = request_parse_uri(buffer[fill].uri, buffer[fill].filename, buffer[fill].cgiargs);
+    //sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
     return 1;
 }
 
@@ -105,7 +108,7 @@ void* worker(void *arg) {
         //printf("after wait\n");
         struct request local_request = get();
         printf("FINAL FD: %d\n", local_request.conn_fd);
-        request_handle(local_request.conn_fd, local_request.buf, local_request.method, local_request.uri, local_request.version, local_request.filename); //actually handles the request
+        request_handle(local_request.conn_fd, local_request.buf, local_request.method, local_request.uri, local_request.version, local_request.filename, local_request.cgiargs, local_request.is_static); //actually handles the request
         close_or_die(local_request.conn_fd);
         pthread_cond_signal(&empty); //signal producer (master) thread
     }
