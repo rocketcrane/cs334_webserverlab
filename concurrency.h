@@ -31,10 +31,14 @@ struct request {
 struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
 
 //get filename
-int get_file_name(int fd) { //add catch for if fail return 0
+int get_file_name(int fd) { 
     //use FILL because this is called from PUT, before FILL is updated
     readline_or_die(fd, buffer[fill].buf, MAXBUF);
     sscanf(buffer[fill].buf, "%s %s %s", buffer[fill].method, buffer[fill].uri, buffer[fill].version);
+    //printf("uri[0-1]: %s\n", buffer[fill].uri[3]);
+    if (strstr(buffer[fill].uri, "..") != NULL) {
+        printf("FBI: YOU HAVE VIOLATED TERMS & CONDITIONS. POSSIBLE FINE OF UP TO $250,000.\n");
+    }
     buffer[fill].is_static = request_parse_uri(buffer[fill].uri, buffer[fill].filename, buffer[fill].cgiargs);
     //sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
     return 1;
