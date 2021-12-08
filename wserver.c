@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 	int threads = 1;			//default to single thread
 	char *schedalg = "FIFO";	//default to FIFO
     
-    while ((c = getopt(argc, argv, "d:p:t:b:s:")) != -1)
+    while ((c = getopt(argc, argv, "d:p:t:b:s:")) != -1) {
 	switch (c) {
 	case 'd':
 	    root_dir = optarg;
@@ -35,13 +35,14 @@ int main(int argc, char *argv[]) {
 		schedalg = optarg;
 		break;
 	default:
-	    fprintf(stderr, "usage: wserver [-d basedir] [-p port]\n");
+	    fprintf(stderr, "usage: wserver [-d basedir] [-p port] [-t threads] [-b buffers] [-s scheduler FIFO or SFF]\n");
 	    exit(1);
 	}
+	}
 
-	//update scheduler boolean for worker threads
+	//update scheduler variable for worker threads
 	//FIFO
-	if (!strcmp(schedalg, "FIFO")) { //strcmp returns 0 if two strings are equal
+	if (!strcmp(schedalg, "FIFO")) { //strcmp returns 0 if strings are equal
 		scheduler = 0;
 	}
 	//SFF 
@@ -62,10 +63,9 @@ int main(int argc, char *argv[]) {
     // now, get to work (listen for port)
     int listen_fd = open_listen_fd_or_die(port);
 
-	buffer = (struct request*)malloc(sizeof(struct request) * buffers);	//allocate space for struct of request info
+	buffer = (struct request*)malloc(sizeof(struct request) * buffers);	//allocate space for struct of requests
 	
 	//master thread loop
-	//only FIFO (currently)
 	pthread_mutex_lock(&mutex); //lock section
     while (1) {
 		//if buffer is full then wait for empty signal
@@ -79,9 +79,9 @@ int main(int argc, char *argv[]) {
 		int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
 		put(conn_fd); //put file descriptor in buffer		
 		pthread_cond_signal(&full); //signal a worker thread
-		pthread_mutex_unlock(&mutex); //unlock section
-
     }
+	pthread_mutex_unlock(&mutex); //unlock section
+
     return 0;
 }
 
