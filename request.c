@@ -159,7 +159,6 @@ void request_handle(int fd, char* buf, char* method, char* uri, char* version, c
     }
     request_read_headers(fd);
     
-    printf("cgiargs: %s\n", cgiargs);
     if (stat(filename, &sbuf) < 0) {
 	request_error(fd, filename, "404", "Not found", "server could not find this file");
 	return;

@@ -35,12 +35,10 @@ int get_file_name(int fd) {
     //use FILL because this is called from PUT, before FILL is updated
     readline_or_die(fd, buffer[fill].buf, MAXBUF);
     sscanf(buffer[fill].buf, "%s %s %s", buffer[fill].method, buffer[fill].uri, buffer[fill].version);
-    //printf("uri[0-1]: %s\n", buffer[fill].uri[3]);
     if (strstr(buffer[fill].uri, "..") != NULL) {
         printf("FBI: YOU HAVE VIOLATED TERMS & CONDITIONS. POSSIBLE FINE OF UP TO $250,000.\n");
     }
     buffer[fill].is_static = request_parse_uri(buffer[fill].uri, buffer[fill].filename, buffer[fill].cgiargs);
-    //sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
     return 1;
 }
 
@@ -64,7 +62,6 @@ void put(int value) {           //given file descriptor
     //update fill and count
     fill = (fill + 1) % buffers;
     count++;
-    //printf("did put, count: %d\n", count);
 }
 
 struct request get() {
@@ -90,14 +87,11 @@ struct request get() {
                 index = i;
             }
         }
-        printf("SFF index is %d\n", index);
         local_request = buffer[index]; //save smallest file request to local_request
         buffer[index].file_size = 0; //zero out the file size of that request
     }
-
-    use = (use + 1) % buffers;
-    count--;
-    //printf("new fd: %d\n", local_request.conn_fd);
+    use = (use + 1) % buffers;      //move use to next slot in buffer
+    count--;                        //decrement count of requests in buffer
     return local_request;
 }
 
@@ -106,12 +100,9 @@ void* worker(void *arg) {
     pthread_mutex_lock(&mutex); //lock section
     while(1) {
         while (count == 0) {
-            //printf ("before wait worker, count: %d\n", count);
             pthread_cond_wait(&full, &mutex);
         }
-        //printf("after wait\n");
         struct request local_request = get();
-        printf("FINAL FD: %d\n", local_request.conn_fd);
         request_handle(local_request.conn_fd, local_request.buf, local_request.method, local_request.uri, local_request.version, local_request.filename, local_request.cgiargs, local_request.is_static); //actually handles the request
         close_or_die(local_request.conn_fd);
         pthread_cond_signal(&empty); //signal producer (master) thread

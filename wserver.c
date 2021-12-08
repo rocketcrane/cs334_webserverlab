@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
 		printf("requested %s scheduler not implemented\n", schedalg);
 		exit(1);
 	}
-	printf("scheduler is %s\n", schedalg);
 
     // run out of this directory
     chdir_or_die(root_dir);
@@ -78,10 +77,8 @@ int main(int argc, char *argv[]) {
 		struct sockaddr_in client_addr;
 		int client_len = sizeof(client_addr);
 		int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
-		printf("original fd: %d\n", conn_fd);
 		put(conn_fd); //put file descriptor in buffer		
 		pthread_cond_signal(&full); //signal a worker thread
-		//printf("post sig\n");
 		pthread_mutex_unlock(&mutex); //unlock section
 
     }
