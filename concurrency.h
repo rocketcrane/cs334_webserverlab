@@ -3,11 +3,10 @@
 
 #define MAXBUF (8192) //same as request.c
 
-//concurrency variables
-int fill = 0;
-int use = 0;
-int count = 0;
-int buffers;
+int fill = 0;       //buffer index of request, for adding to buffer and getting request info for struct
+int use = 0;        //buffer index of request, for use() when call request
+int count = 0;      //number of requests in buffer
+int buffers;        //number of slots in buffer
 
 int scheduler = 0; //scheduler chosen: FIFO = 0, SFF = 1;
 
@@ -37,14 +36,11 @@ int get_file_name(int fd) {
     //use FILL because this is called from PUT, before FILL is updated
     readline_or_die(fd, buffer[fill].buf, MAXBUF);
     sscanf(buffer[fill].buf, "%s %s %s", buffer[fill].method, buffer[fill].uri, buffer[fill].version);
-    //printf("uri[0-1]: %s\n", buffer[fill].uri[3]);
-    //run out of this directory
     if (strstr(buffer[fill].uri, "..") != NULL) {
         printf("NO ACCESS TO THIS DIRECTORY. FBI: YOU HAVE VIOLATED TERMS & CONDITIONS. FINE OF UP TO $250,000.\n");
         exit(1);
     }
     buffer[fill].is_static = request_parse_uri(buffer[fill].uri, buffer[fill].filename, buffer[fill].cgiargs);
-    //sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
     return 1;
 }
 
@@ -57,7 +53,7 @@ size_t get_file_size(const char* file_name) {
     return file_stats.st_size;
 }
 
-void put(int value) {
+void put(int value) {           //given file descriptor
     buffer[fill].conn_fd = value;
 
     //code to get file size
@@ -68,7 +64,6 @@ void put(int value) {
     //update fill and count
     fill = (fill + 1) % buffers;
     count++;
-    //printf("did put, count: %d\n", count);
 }
 
 struct request get() {
@@ -94,14 +89,11 @@ struct request get() {
                 index = i;
             }
         }
-        printf("SFF index is %d\n", index);
         local_request = buffer[index]; //save smallest file request to local_request
         buffer[index].file_size = 0; //zero out the file size of that request
     }
-
-    use = (use + 1) % buffers;
-    count--;
-    //printf("new fd: %d\n", local_request.conn_fd);
+    use = (use + 1) % buffers;      //move use to next slot in buffer
+    count--;                        //decrement count of requests in buffer
     return local_request;
 }
 
@@ -110,12 +102,9 @@ void* worker(void *arg) {
     pthread_mutex_lock(&mutex); //lock section
     while(1) {
         while (count == 0) {
-            //printf ("before wait worker, count: %d\n", count);
             pthread_cond_wait(&full, &mutex);
         }
-        //printf("after wait\n");
         struct request local_request = get();
-        printf("FINAL FD: %d\n", local_request.conn_fd);
         request_handle(local_request.conn_fd, local_request.buf, local_request.method, local_request.uri, local_request.version, local_request.filename, local_request.cgiargs, local_request.is_static); //actually handles the request
         close_or_die(local_request.conn_fd);
         pthread_cond_signal(&empty); //signal producer (master) thread

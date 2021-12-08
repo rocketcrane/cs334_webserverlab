@@ -13,9 +13,9 @@ char default_root[] = ".";
 int main(int argc, char *argv[]) {
     int c;
     char *root_dir = default_root;
-    int port = 10000;
-	int threads = 1;
-	char *schedalg = "FIFO";
+    int port = 10000;			//default to port 10000
+	int threads = 1;			//default to single thread
+	char *schedalg = "FIFO";	//default to FIFO
     
     while ((c = getopt(argc, argv, "d:p:t:b:s:")) != -1)
 	switch (c) {
@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
 		printf("requested %s scheduler not implemented\n", schedalg);
 		exit(1);
 	}
-	printf("scheduler is %s\n", schedalg);
 
     // run out of this directory
     chdir_or_die(root_dir);
@@ -63,7 +62,7 @@ int main(int argc, char *argv[]) {
     // now, get to work (listen for port)
     int listen_fd = open_listen_fd_or_die(port);
 
-	buffer = (struct request*)malloc(sizeof(struct request) * buffers);
+	buffer = (struct request*)malloc(sizeof(struct request) * buffers);	//allocate space for struct of request info
 	
 	//master thread loop
 	//only FIFO (currently)
@@ -78,10 +77,8 @@ int main(int argc, char *argv[]) {
 		struct sockaddr_in client_addr;
 		int client_len = sizeof(client_addr);
 		int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
-		printf("original fd: %d\n", conn_fd);
 		put(conn_fd); //put file descriptor in buffer		
 		pthread_cond_signal(&full); //signal a worker thread
-		//printf("post sig\n");
 		pthread_mutex_unlock(&mutex); //unlock section
 
     }
