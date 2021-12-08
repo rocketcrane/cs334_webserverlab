@@ -3,6 +3,7 @@
 
 #define MAXBUF (8192) //same as request.c
 
+//concurrency variables
 int fill = 0;
 int use = 0;
 int count = 0;
@@ -14,12 +15,13 @@ int scheduler = 0; //scheduler chosen: FIFO = 0, SFF = 1;
 pthread_cond_t empty, full;
 pthread_mutex_t mutex;
 
+//holds everything required to process request
 struct request {
     int conn_fd;
     int file_size;
     int is_static;
 
-    //for request handling
+    //for request handling, abstracted away from request_handle
     char buf[MAXBUF];
     char method[MAXBUF];
     char uri[MAXBUF];
@@ -28,7 +30,7 @@ struct request {
     char cgiargs[MAXBUF];
 };
 
-struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO only)
+struct request* buffer; //create circular buffer of request objects to store conn_fd (FIFO takes items in order, SFF takes items by file size)
 
 //get filename
 int get_file_name(int fd) { 
@@ -36,8 +38,10 @@ int get_file_name(int fd) {
     readline_or_die(fd, buffer[fill].buf, MAXBUF);
     sscanf(buffer[fill].buf, "%s %s %s", buffer[fill].method, buffer[fill].uri, buffer[fill].version);
     //printf("uri[0-1]: %s\n", buffer[fill].uri[3]);
+    //run out of this directory
     if (strstr(buffer[fill].uri, "..") != NULL) {
-        printf("FBI: YOU HAVE VIOLATED TERMS & CONDITIONS. POSSIBLE FINE OF UP TO $250,000.\n");
+        printf("NO ACCESS TO THIS DIRECTORY. FBI: YOU HAVE VIOLATED TERMS & CONDITIONS. FINE OF UP TO $250,000.\n");
+        exit(1);
     }
     buffer[fill].is_static = request_parse_uri(buffer[fill].uri, buffer[fill].filename, buffer[fill].cgiargs);
     //sprintf(buffer[fill].filename, ".%s", buffer[fill].uri);
