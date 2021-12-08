@@ -3,10 +3,10 @@
 
 #define MAXBUF (8192) //same as request.c
 
-int fill = 0;
-int use = 0;
-int count = 0;
-int buffers;
+int fill = 0;       //buffer index of request, for adding to buffer and getting request info for struct
+int use = 0;        //buffer index of request, for use() when call request
+int count = 0;      //number of requests in buffer
+int buffers;        //number of slots in buffer
 
 int scheduler = 0; //scheduler chosen: FIFO = 0, SFF = 1;
 
@@ -53,7 +53,7 @@ size_t get_file_size(const char* file_name) {
     return file_stats.st_size;
 }
 
-void put(int value) {
+void put(int value) {           //given file descriptor
     buffer[fill].conn_fd = value;
 
     //code to get file size
